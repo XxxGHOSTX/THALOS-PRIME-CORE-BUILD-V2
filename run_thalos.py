@@ -60,6 +60,10 @@ class ThalosApp:
             'history': self.mem.recall_recent(3, self.session)
         })
         
+        # Add inference and fusion info
+        result['inference'] = intent
+        result['fusion'] = fused
+        
         # Store
         self.mem.archive_exchange(txt, result, self.session)
         self.mem.log_pattern(intent['type'])
