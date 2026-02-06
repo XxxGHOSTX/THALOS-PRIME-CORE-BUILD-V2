@@ -4,7 +4,50 @@ on: [push, pull_request]
 
 jobs:
   test:
+    name: Test on ${{ matrix.os }} - Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+      fail-fast: false
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        pip install -r dependencies.txt
+    
+    - name: Run basic tests
+      run: |
+        python3 tests.py
+    
+    - name: Run comprehensive tests
+      run: |
+        python3 tests_comprehensive.py
+    
+    - name: Verify system
+      run: |
+        python3 run_thalos.py --report
+    
+    - name: Test training script
+      run: |
+        python3 synapse_matrix/scripts/train_codex.py --epochs 2 --num-samples 10
+    
+    - name: Test inference script
+      run: |
+        python3 synapse_matrix/scripts/inference_codex.py --mode sample --query "Test query"
+  
+  build:
+    name: Build Package
     runs-on: ubuntu-latest
+    needs: test
     
     steps:
     - uses: actions/checkout@v3
@@ -17,11 +60,16 @@ jobs:
     - name: Install dependencies
       run: |
         pip install -r dependencies.txt
+        pip install pyinstaller
     
-    - name: Run tests
+    - name: Build executable
       run: |
-        python3 tests.py
+        pyinstaller --onefile --name thalos run_thalos.py || echo "PyInstaller build skipped"
     
-    - name: Verify system
-      run: |
-        python3 run_thalos.py --report
+    - name: Upload artifacts
+      if: success()
+      uses: actions/upload-artifact@v3
+      with:
+        name: thalos-executable
+        path: dist/thalos*
+        retention-days: 30
