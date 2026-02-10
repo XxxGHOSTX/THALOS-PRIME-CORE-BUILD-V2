@@ -12,7 +12,7 @@ from typing import Any, Dict, List
 class LoBLoader:
     """Minimal shard loader for Library of Babel assets."""
 
-    def __init__(self, path: str = None):
+    def __init__(self, path: str | None = None):
         base_path = path or os.path.join(os.path.dirname(__file__), "shards")
         self.path = base_path
         self.shards: List[str] = [
@@ -28,7 +28,10 @@ class LoBLoader:
         if not self.shards:
             return {"entries": [], "meta": {}}
 
-        shard_index = int(sha256(key.encode()).hexdigest(), 16) % len(self.shards)
+        # Use the first 8 bytes of the SHA256 digest to keep selection deterministic
+        # while offering stable distribution across shard counts.
+        digest = sha256(key.encode()).digest()
+        shard_index = int.from_bytes(digest[:8], "big") % len(self.shards)
         shard_path = self.shards[shard_index]
 
         with open(shard_path, "r", encoding="utf-8") as handle:

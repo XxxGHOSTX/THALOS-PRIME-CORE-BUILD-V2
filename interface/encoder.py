@@ -6,7 +6,8 @@ Transforms neural or textual signals into latent vectors for Matrix Codex.
 from __future__ import annotations
 
 import numpy as np
-from typing import Any, Dict, Iterable, Union
+from collections.abc import Iterable
+from typing import Any, Dict, Union
 
 
 class NeuralEncoder:
@@ -33,14 +34,17 @@ class NeuralEncoder:
             return self._encode_text(signal)
         if isinstance(signal, dict):
             return self._encode_dict(signal)
-        if isinstance(signal, Iterable):
+        if self._is_numeric_iterable(signal):
             return self._encode_iterable(signal)
         return np.zeros(self.latent_dim)
+
+    def _is_numeric_iterable(self, signal: Any) -> bool:
+        return isinstance(signal, Iterable) and not isinstance(signal, (str, bytes, dict))
 
     def _encode_text(self, txt: str) -> np.ndarray:
         vec = np.zeros(self.latent_dim)
         for idx, ch in enumerate(txt[: self.latent_dim]):
-            vec[idx] = (ord(ch) % 255) / 255.0
+            vec[idx] = (ord(ch) % 256) / 255.0
         return vec
 
     def _encode_iterable(self, data: Iterable[Any]) -> np.ndarray:
@@ -53,7 +57,11 @@ class NeuralEncoder:
 
         if arr.size == 0:
             return np.zeros(self.latent_dim)
-        scaled = np.interp(arr, (arr.min(), arr.max()), (-1, 1)) if arr.max() != arr.min() else arr
+        min_v, max_v = arr.min(), arr.max()
+        if np.isclose(max_v, min_v):
+            scaled = np.zeros_like(arr)
+        else:
+            scaled = np.interp(arr, (min_v, max_v), (-1, 1))
         vec = np.zeros(self.latent_dim)
         limit = min(self.latent_dim, scaled.size)
         vec[:limit] = scaled[:limit]

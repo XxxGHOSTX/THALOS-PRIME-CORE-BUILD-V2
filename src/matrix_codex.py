@@ -19,6 +19,7 @@ from synapse_matrix.bio_synthesizer import BioSynthesizer
 
 class MatrixCodex:
     """Core SBI model with LoB-aware reasoning."""
+    DEFAULT_QUERY_KEY = "mind_signal"
 
     def __init__(
         self,
@@ -31,7 +32,7 @@ class MatrixCodex:
         self.predictive = PredictiveEngine()
         self.semantic_store = semantic_memory or SemanticMemory()
         self.lob = lob_loader or load_default_loader()
-        self.sbi_engine = SBIEngine()
+        self.sbi_engine = SBIEngine(latent_dim=self.encoder.latent_dim)
         self.bio = BioSynthesizer(2_000_000)
 
     def forward(self, input_dict: Dict[str, Any]) -> Dict[str, Any]:
@@ -44,7 +45,7 @@ class MatrixCodex:
         key = input_dict.get("text", "")
         shard = self.lob.get_shard(key or "default")
         shard_vec = self.encoder.encode(shard.get("entries", []))
-        self.semantic_store.store_shard(key or "default", shard_vec.tolist())
+        self.semantic_store.store_shard(key or "default", shard_vec)
 
         latent_vector = input_dict.get("latent") or self.encoder.encode(key)
         sbi_result = self.sbi_engine.resolve(latent_vector, shard_vec)
@@ -54,7 +55,7 @@ class MatrixCodex:
         predictive = self.predictive.adjust(intent.get("certainty", 0.5), sbi_result["coherence"])
 
         # Feed through BioSynthesizer for contextual certainty
-        biosynth_resp = self.bio.infer_query(key or "mind-signal", {"intent": intent})
+        biosynth_resp = self.bio.infer_query(key or self.DEFAULT_QUERY_KEY, {"intent": intent})
 
         decoded = self.decoder.decode(
             sbi_result["combined_vector"],
@@ -80,3 +81,11 @@ class MatrixCodexLoB(MatrixCodex):
 
     def __init__(self, lob_loader: LoBLoader):
         super().__init__(lob_loader=lob_loader)
+        self.lob_mode = True
+
+    def forward(self, input_dict: Dict[str, Any]) -> Dict[str, Any]:
+        result = super().forward(input_dict)
+        meta = result.get("meta", {})
+        meta["lob_mode"] = True
+        result["meta"] = meta
+        return result

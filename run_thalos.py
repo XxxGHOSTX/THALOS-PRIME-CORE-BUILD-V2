@@ -24,10 +24,10 @@ except ImportError:
 class ThalosApp:
     """Main application controller"""
     
-    def __init__(self, gui_mode=True, crypto_mode=True, mind_mode=False):
+    def __init__(self, gui_mode=True, crypto_mode=True, mind_mode=False, param_goal=200000000):
         print("⚡ Starting THALOS PRIME...")
         
-        self.bio = BioSynthesizer(200000000)
+        self.bio = BioSynthesizer(param_goal)
         self.mem = CognitionVault("data.db")
         self.fusion = FusionConductor()
         self.infer = CognitiveInferenceNet()
@@ -69,7 +69,7 @@ class ThalosApp:
         # Optional Mind Interface path with LoB awareness
         if self.codex:
             codex_resp = self.codex.forward({'text': txt, 'context': {'latent': fused}})
-            result['mind_output'] = codex_resp
+            result['mind_output'] = self._clean_codex_resp(codex_resp)
         
         # Store
         self.mem.archive_exchange(txt, result, self.session)
@@ -129,6 +129,15 @@ class ThalosApp:
         if self.gui:
             self.gui.stop()
         print("✅ Goodbye")
+
+    def _clean_codex_resp(self, resp):
+        cleaned = {}
+        for key, value in resp.items():
+            if hasattr(value, 'tolist'):
+                cleaned[key] = value.tolist()
+            else:
+                cleaned[key] = value
+        return cleaned
 
 
 def main():

@@ -17,8 +17,9 @@ class SemanticMemory:
         self.memory: Dict[str, Any] = {}
 
     def store_shard(self, key: str, shard_vector: Any) -> None:
-        self.memory[key] = shard_vector
-        self.vault.save_snapshot(f"lob::{key}", {"vector": str(shard_vector)})
+        vector_payload = shard_vector.tolist() if hasattr(shard_vector, "tolist") else shard_vector
+        self.memory[key] = vector_payload
+        self.vault.save_snapshot(f"lob::{key}", {"vector": vector_payload})
 
     def retrieve_shard(self, key: str):
         if key in self.memory:
