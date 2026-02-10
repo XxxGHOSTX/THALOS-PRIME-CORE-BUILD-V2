@@ -11,6 +11,7 @@ from modality_bridges.fusion_conductor import FusionConductor
 from inference_network.cognitive_net import CognitiveInferenceNet
 from secure_params.crypto_vault import SecureVault
 from async_workers.worker_pool import AsyncPool
+from src.matrix_codex import MatrixCodex
 
 try:
     from viewport_canvas.dynamic_viewport import DynamicViewport
@@ -23,14 +24,15 @@ except ImportError:
 class ThalosApp:
     """Main application controller"""
     
-    def __init__(self, gui_mode=True, crypto_mode=True):
+    def __init__(self, gui_mode=True, crypto_mode=True, mind_mode=False, param_goal=200000000):
         print("⚡ Starting THALOS PRIME...")
         
-        self.bio = BioSynthesizer(200000000)
+        self.bio = BioSynthesizer(param_goal)
         self.mem = CognitionVault("data.db")
         self.fusion = FusionConductor()
         self.infer = CognitiveInferenceNet()
         self.pool = AsyncPool(4)
+        self.codex = MatrixCodex() if mind_mode else None
         
         if crypto_mode:
             self.crypto = SecureVault()
@@ -63,6 +65,11 @@ class ThalosApp:
         # Add inference and fusion info
         result['inference'] = intent
         result['fusion'] = fused
+
+        # Optional Mind Interface path with LoB awareness
+        if self.codex:
+            codex_resp = self.codex.forward({'text': txt, 'context': {'latent': fused}})
+            result['mind_output'] = self._clean_codex_resp(codex_resp)
         
         # Store
         self.mem.archive_exchange(txt, result, self.session)
@@ -123,18 +130,29 @@ class ThalosApp:
             self.gui.stop()
         print("✅ Goodbye")
 
+    def _clean_codex_resp(self, resp):
+        cleaned = {}
+        for key, value in resp.items():
+            if hasattr(value, 'tolist'):
+                cleaned[key] = value.tolist()
+            else:
+                cleaned[key] = value
+        return cleaned
+
 
 def main():
     parser = ap.ArgumentParser(description="THALOS PRIME SBI System")
     parser.add_argument('--mode', choices=['gui', 'cli'], default='gui')
     parser.add_argument('--no-crypto', action='store_true')
+    parser.add_argument('--mind-interface', action='store_true')
     parser.add_argument('--report', action='store_true')
     args = parser.parse_args()
     
     try:
         app = ThalosApp(
             gui_mode=(args.mode=='gui'),
-            crypto_mode=(not args.no_crypto)
+            crypto_mode=(not args.no_crypto),
+            mind_mode=args.mind_interface
         )
         
         if args.report:
