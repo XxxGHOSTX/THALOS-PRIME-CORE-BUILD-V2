@@ -1,0 +1,8 @@
+{
+  "description": "Lightweight Library of Babel semantic fingerprint index",
+  "shards": [
+    "shard_0001.json",
+    "shard_0002.json"
+  ],
+  "version": "0.1.0"
+}

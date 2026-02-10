@@ -7,6 +7,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from synapse_matrix.bio_synthesizer import BioSynthesizer
 from cognition_store.persistence import CognitionVault
+from lob_db.loader import LoBLoader
+from src.matrix_codex import MatrixCodex
 
 
 class BasicTests(ut.TestCase):
@@ -30,6 +32,21 @@ class BasicTests(ut.TestCase):
         self.assertGreater(len(recent), 0)
         
         os.remove("test.db")
+
+
+class MindInterfaceTests(ut.TestCase):
+    
+    def test_lob_loader_shard(self):
+        loader = LoBLoader()
+        shard = loader.get_shard("hello")
+        self.assertIn("__shard_id", shard)
+        self.assertGreater(len(shard.get("entries", [])), 0)
+    
+    def test_matrix_codex_forward(self):
+        codex = MatrixCodex()
+        result = codex.forward({"text": "hello", "context": {}})
+        self.assertIn("certainty", result)
+        self.assertIn("coherence", result)
 
 
 if __name__ == '__main__':

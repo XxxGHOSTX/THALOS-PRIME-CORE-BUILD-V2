@@ -1,0 +1,10 @@
+{
+  "shard_0001.json": {
+    "hash_hint": "greet",
+    "coverage": "greetings-and-identity"
+  },
+  "shard_0002.json": {
+    "hash_hint": "help",
+    "coverage": "guidance-and-support"
+  }
+}

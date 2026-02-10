@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "theme": "guidance-and-support",
+    "coverage": ["help", "assist", "support"],
+    "novelty": 0.37
+  },
+  "entries": [
+    "Guidance mode engaged, calibrating confidence.",
+    "Support pathways mapped via semantic lattice.",
+    "Provide context and target outcome."
+  ]
+}
